@@ -1,0 +1,102 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  ApiGateway01Deployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId:
+        Ref: ApiGateway01
+      StageName: Prod
+  ApiGateway01Function01Authorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      RestApiId:
+        Ref: ApiGateway01
+      Type: REQUEST
+      AuthorizerUri:
+        Fn::Sub:
+          - >-
+            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${func}/invocations
+          - func:
+              Fn::GetAtt:
+                - Function01
+                - Arn
+      IdentitySource: method.request.header.Authorization
+      Name: ApiGateway01Function01Authorizer
+      AuthorizerResultTtlInSeconds: 0
+  ApiGateway01Function01AuthorizerLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      FunctionName:
+        Fn::GetAtt:
+          - Function01
+          - Arn
+      SourceArn:
+        Fn::Sub:
+          - >-
+            arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${apiId}/authorizers/*
+          - apiId:
+              Ref: ApiGateway01
+  ApiGateway01:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: ApiGateway01
+  Function01:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs12.x
+      MemorySize: 512
+      Timeout: 6
+      Environment:
+        Variables:
+          ALTO_FUNCTION_ID: Function01
+          ALTO_FUNCTION_NAME: Function01
+          ALTO_DEPLOYMENT_TIME: '2021-09-09T14:42:05.764Z'
+          BUCKET_BUCKET01:
+            Ref: Bucket01
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:ListBucket
+                - s3:GetBucketLocation
+                - s3:GetObjectVersion
+                - s3:GetLifecycleConfiguration
+                - s3:PutObject
+                - s3:PutObjectAcl
+                - s3:PutLifecycleConfiguration
+                - s3:DeleteObject
+              Resource:
+                - Fn::Join:
+                    - /
+                    - - Fn::GetAtt:
+                          - Bucket01
+                          - Arn
+                      - '*'
+                - Fn::GetAtt:
+                    - Bucket01
+                    - Arn
+      InlineCode: >-
+        module.exports.handler = async (event, context) => { return {
+        statusCode: 200 } }
+  Bucket01:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+Outputs:
+  Domain212ApiGateway01StageProd:
+    Value:
+      Fn::Sub:
+        - https://${apiId}.execute-api.${AWS::Region}.amazonaws.com/Prod
+        - apiId:
+            Ref: ApiGateway01
+  Domain18Bucket01:
+    Value:
+      Fn::GetAtt:
+        - Bucket01
+        - DomainName
