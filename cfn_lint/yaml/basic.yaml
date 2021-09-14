@@ -26,7 +26,7 @@ Parameters:
     AllowedPattern: '^[A-Za-z0-9._%+-]+@example.com$'
   OperationsContact:
     Type: String
-    Default: operations@example.com
+    Default: operation@example.com
     AllowedPattern: '^[A-Za-z0-9._%+-]+@example.com$'
 Conditions:
   isProd:
